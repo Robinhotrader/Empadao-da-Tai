@@ -22,9 +22,13 @@ import {
   loginAdmin,
 } from '../src/services/firebase';
 import logoEmpadaoTai from '../assets/logo-empadao-tai.png';
+import { Linking } from 'react-native';
+
 
 export default function HomeScreen() {
   const router = useRouter();
+  
+  
 
   // Estados do pedido do cliente
   const [nome, setNome] = useState('');
@@ -42,6 +46,28 @@ export default function HomeScreen() {
 
   // Mensagem de sucesso visível na tela
   const [mensagemSucesso, setMensagemSucesso] = useState('');
+  const enviarPedidoWhatsApp = () => {
+  const numero = '5547999068147'; // número da Taí (55 + DDD + número)
+  const mensagem = encodeURIComponent(
+    `Olá Taí! Pedido confirmado:\n
+    Nome: ${nome}\n
+    Telefone: ${telefone}\n
+    Sabor: ${sabor}\n
+    Tamanho: ${tamanho}\n
+    Combo: ${combo}\n
+    Observação: ${observacao || 'Nenhuma'}`
+  );
+  const url = `https://wa.me/${numero}?text=${mensagem}`;
+
+  Linking.canOpenURL(url).then((supported) => {
+    if (supported) {
+      Linking.openURL(url);
+    } else {
+      Alert.alert('Erro', 'WhatsApp não está instalado ou não pôde ser aberto');
+    }
+  });
+};
+
 
   const handleEnviar = async () => {
     if (!nome || !telefone) {
@@ -67,6 +93,7 @@ export default function HomeScreen() {
         'Pedido confirmado',
         'Seu pedido foi confirmado com sucesso. Obrigado por escolher o Empadão da Taí!'
       );
+      setMensagemSucesso('Seu pedido foi confirmado com sucesso. Obrigado!');
 
       // mensagem visível na tela (web e mobile)
       setMensagemSucesso('Seu pedido foi confirmado com sucesso. Obrigado!');
