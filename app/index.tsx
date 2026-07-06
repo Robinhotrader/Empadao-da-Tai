@@ -22,7 +22,7 @@ import {
   loginAdmin,
 } from '../src/services/firebase';
 import logoEmpadaoTai from '../assets/logo-empadao-tai.png';
-import { Linking } from 'react-native';
+import { Linking, Platform } from 'react-native';
 
 
 export default function HomeScreen() {
@@ -57,15 +57,19 @@ export default function HomeScreen() {
     Combo: ${combo}\n
     Observação: ${observacao || 'Nenhuma'}`
   );
-  const url = `https://wa.me/${numero}?text=${mensagem}`;
+   const url = `https://wa.me/${numero}?text=${mensagem}`;
 
-  Linking.canOpenURL(url).then((supported) => {
-    if (supported) {
-      Linking.openURL(url);
-    } else {
-      Alert.alert('Erro', 'WhatsApp não está instalado ou não pôde ser aberto');
-    }
-  });
+  if (Platform.OS === 'web') {
+    window.open(url, '_blank'); // abre WhatsApp Web
+  } else {
+    Linking.canOpenURL(url).then((supported) => {
+      if (supported) {
+        Linking.openURL(url);
+      } else {
+        Alert.alert('Erro', 'WhatsApp não está instalado ou não pôde ser aberto');
+      }
+    });
+  }
 };
 
 
