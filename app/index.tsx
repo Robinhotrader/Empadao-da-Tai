@@ -72,46 +72,66 @@ export default function HomeScreen() {
 
 
 
-  const handleEnviar = async () => {
-    if (!nome || !telefone) {
-      Alert.alert('Atenção', 'Preencha nome e telefone');
-      return;
-    }
+ const handleEnviar = async () => {
+  if (!nome || !telefone) {
+    Alert.alert('Atenção', 'Preencha nome e telefone');
+    return;
+  }
 
-    setLoading(true);
-    const res = await criarPedidoEmpada({
-      nome,
-      telefone,
-      sabor,
-      tamanho,
-      combo,
-      observacao,
-    });
-    console.log('Resposta criarPedidoEmpada:', res);
-    setLoading(false);
+  setLoading(true);
+  const res = await criarPedidoEmpada({
+    nome,
+    telefone,
+    sabor,
+    tamanho,
+    combo,
+    observacao,
+  });
+  console.log('Resposta criarPedidoEmpada:', res);
+  setLoading(false);
 
-    if (res.success) {
-      // Alert para app nativo
-      Alert.alert(
-        'Pedido confirmado',
-        'Seu pedido foi confirmado com sucesso. Obrigado por escolher o Empadão da Taí!'
-      );
-      setMensagemSucesso('Seu pedido foi confirmado com sucesso. Obrigado!');
+  if (res.success) {
+    Alert.alert(
+      'Pedido confirmado',
+      'Seu pedido foi confirmado com sucesso. Obrigado por escolher o Empadão da Taí!'
+    );
 
-      // mensagem visível na tela (web e mobile)
-      setMensagemSucesso('Seu pedido foi confirmado com sucesso. Obrigado!');
+    setMensagemSucesso('Seu pedido foi confirmado com sucesso. Obrigado!');
 
-      // limpa todos os campos do formulário
-      setNome('');
-      setTelefone('');
-      setObservacao('');
-      setSabor(sabores[0]);
-      setTamanho(tamanhos[0]);
-      setCombo(combos[0]);
+    // abre WhatsApp (app ou web)
+    const numero = '5547999068147';
+    const mensagem = encodeURIComponent(
+      `Olá Taí! Pedido confirmado:\n
+      Nome: ${nome}\n
+      Telefone: ${telefone}\n
+      Sabor: ${sabor}\n
+      Tamanho: ${tamanho}\n
+      Combo: ${combo}\n
+      Observação: ${observacao || 'Nenhuma'}`
+    );
+    const url = `https://wa.me/${numero}?text=${mensagem}`;
+
+    if (Platform.OS === 'web') {
+      // navegador (Vercel)
+      window.open(url, '_blank');
     } else {
-      Alert.alert('Erro', res.error ?? 'Não foi possível registrar o pedido');
+      // app mobile
+      Linking.openURL(url).catch(() => {
+        Alert.alert('Erro', 'Não foi possível abrir o WhatsApp.');
+      });
     }
-  };
+
+    // limpa os campos
+    setNome('');
+    setTelefone('');
+    setObservacao('');
+    setSabor(sabores[0]);
+    setTamanho(tamanhos[0]);
+    setCombo(combos[0]);
+  } else {
+    Alert.alert('Erro', res.error ?? 'Não foi possível registrar o pedido');
+  }
+};
 
   const handleAdminLogin = async () => {
     if (!adminEmail || !adminSenha) {
