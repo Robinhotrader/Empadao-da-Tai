@@ -22,7 +22,7 @@ import {
   loginAdmin,
 } from '../src/services/firebase';
 import logoEmpadaoTai from '../assets/logo-empadao-tai.png';
-import { Linking, Platform } from 'react-native';
+import { Linking, Platform,  } from 'react-native';
 
 
 export default function HomeScreen() {
@@ -47,7 +47,7 @@ export default function HomeScreen() {
   // Mensagem de sucesso visível na tela
   const [mensagemSucesso, setMensagemSucesso] = useState('');
   const enviarPedidoWhatsApp = () => {
-  const numero = '5547999068147'; // número da Taí (55 + DDD + número)
+  const numero = '5547999068147'; // número da Taí
   const mensagem = encodeURIComponent(
     `Olá Taí! Pedido confirmado:\n
     Nome: ${nome}\n
@@ -57,20 +57,19 @@ export default function HomeScreen() {
     Combo: ${combo}\n
     Observação: ${observacao || 'Nenhuma'}`
   );
-   const url = `https://wa.me/${numero}?text=${mensagem}`;
+  const url = `https://wa.me/${numero}?text=${mensagem}`;
 
   if (Platform.OS === 'web') {
-    window.open(url, '_blank'); // abre WhatsApp Web
+    // Abre WhatsApp Web no navegador
+    window.open(url, '_blank');
   } else {
-    Linking.canOpenURL(url).then((supported) => {
-      if (supported) {
-        Linking.openURL(url);
-      } else {
-        Alert.alert('Erro', 'WhatsApp não está instalado ou não pôde ser aberto');
-      }
+    // Abre o app WhatsApp no celular
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Erro', 'Não foi possível abrir o WhatsApp.');
     });
   }
 };
+
 
 
   const handleEnviar = async () => {
