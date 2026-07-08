@@ -25,7 +25,7 @@ import {
 } from '../src/services/firebase';
 import logoEmpadaoTai from '../assets/logo-empadao-tai.png';
 
-const ADMIN_WHATSAPP_NUMBER = '5547999068147';
+const ADMIN_WHATSAPP_NUMBER = '5547988564569';
 
 export default function HomeScreen() {
   const router = useRouter();
