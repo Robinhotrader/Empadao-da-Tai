@@ -5,7 +5,7 @@ O projeto permite que clientes escolham sabor, tamanho e combos, com integraçã
 
 ---
 
-## 🚀 Tecnologias utilizadas
+##  Tecnologias utilizadas
 
 - **React Native** — interface moderna e responsiva  
 - **Expo Router** — navegação simplificada  
@@ -16,7 +16,7 @@ O projeto permite que clientes escolham sabor, tamanho e combos, com integraçã
 
 ---
 
-## 💡 Funcionalidades
+##  Funcionalidades
 
 - Formulário de pedido com sabor, tamanho e observações  
 - Envio automático para o WhatsApp da Taí  
@@ -29,24 +29,24 @@ O projeto permite que clientes escolham sabor, tamanho e combos, com integraçã
 ## 📲 Demonstração
 
 Confira o projeto rodando no Vercel:  
-👉 [Empadão da Taí - versão web](https://robinhotrader.vercel.app/)
+ [Empadão da Taí - versão web](https://robinhotrader.vercel.app/)
 
 ---
 
-## 🖼️ Identidade visual
+##  Identidade visual
 
 ![Logo Empadão da Taí](Ativos/logo.png)
 
 ---
 
-## 🧠 Aprendizados
+##  Aprendizados
 
 Esse projeto foi uma oportunidade incrível de aplicar boas práticas de desenvolvimento mobile e web, além de integrar ferramentas reais usadas no dia a dia de pequenos negócios.  
-Mais do que código, é sobre conectar pessoas com aquilo que elas amam: **comida feita com carinho**. 💖
+Mais do que código, é sobre conectar pessoas com aquilo que elas amam: **comida feita com carinho**. 
 
 ---
 
-## 🧑‍💻 Autor
+##  Autor
 
 **Robson (Robinhotrader)**  
 Desenvolvedor apaixonado por unir tecnologia e propósito.  
@@ -55,7 +55,7 @@ Desenvolvedor apaixonado por unir tecnologia e propósito.
 
 ---
 
-## 🪪 Licença
+##  Licença
 
 Este projeto está sob a licença MIT — sinta-se livre para usar e adaptar.
 
