@@ -29,7 +29,7 @@ O projeto permite que clientes escolham sabor, tamanho e combos, com integraçã
 ## 📲 Demonstração
 
 Confira o projeto rodando no Vercel:  
-👉 [Empadão da Taí - versão web](https://empadao-da-tai.vercel.app)
+👉 [Empadão da Taí - versão web](https://robinhotrader.vercel.app/)
 
 ---
 
