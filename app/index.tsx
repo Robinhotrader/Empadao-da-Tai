@@ -44,7 +44,6 @@ export default function HomeScreen() {
   const [adminSenha, setAdminSenha] = useState('');
   const [adminLoading, setAdminLoading] = useState(false);
 
-  // Mensagem de sucesso visível na tela
   const [mensagemSucesso, setMensagemSucesso] = useState('');
 
   // Abre WhatsApp do admin com o pedido já preenchido

@@ -1,4 +1,6 @@
 import { initializeApp } from 'firebase/app';
+import { Linking } from 'react-native';
+
 import {
   getFirestore,
   collection,
