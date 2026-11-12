@@ -1,22 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Alert, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Input } from '../src/components/Input';
 import { Button } from '../src/components/Button';
 import { loginAdmin, onAdminAuthChange } from '../src/services/firebase';
+import logoEmpadaoTai from '../assets/logo-empadao-tai.png';
 
 const AdminLoginScreen: React.FC = () => {
   const router = useRouter();
-  const [email, setEmail] = useState('admin@empadastai.com'); // ajuste para o email que você criou no Firebase
+  const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Se já estiver logado, manda direto para o painel
     const unsub = onAdminAuthChange((user) => {
-      if (user) {
-        router.replace('/admin');
-      }
+      if (user) router.replace('/admin');
     });
     return unsub;
   }, [router]);
@@ -44,41 +42,44 @@ const AdminLoginScreen: React.FC = () => {
       behavior={Platform.select({ ios: 'padding', android: undefined })}
     >
       <View style={styles.card}>
-        <Text style={styles.titulo}>Área administrativa</Text>
-        <Text style={styles.subtitulo}>Empadas Taí</Text>
+        <Image source={logoEmpadaoTai} style={styles.logo} accessibilityLabel="Logo Empadão da Taí" />
+        <Text style={styles.kicker}>ACESSO RESTRITO</Text>
+        <Text style={styles.titulo}>Bem-vinda, Taí</Text>
+        <Text style={styles.subtitulo}>Entre para acompanhar os pedidos do Empadão da Taí.</Text>
 
         <Input
           label="Email"
           value={email}
           onChangeText={setEmail}
-          placeholder="admin@empadastai.com"
+          placeholder="Seu email de acesso"
           keyboardType="email-address"
           autoCapitalize="none"
+          autoComplete="email"
         />
 
         <Input
           label="Senha"
           value={senha}
           onChangeText={setSenha}
-          placeholder="Senha do administrador"
+          placeholder="Sua senha"
           secureTextEntry
+          returnKeyType="done"
+          onSubmitEditing={handleLogin}
         />
 
         <Button
-          title={loading ? 'Entrando...' : 'Entrar'}
+          title={loading ? 'Entrando...' : 'Entrar no painel'}
           onPress={handleLogin}
-          color="#D97706"
+          color="#A74436"
           disabled={loading}
         />
 
-        <Text style={styles.info}>
-          Apenas a dona do negócio deve acessar esta área.
-        </Text>
+        <Text style={styles.info}>Use o email e a senha cadastrados no Firebase.</Text>
 
         <Button
-          title="Voltar para pedidos"
+          title="Voltar para o site"
           onPress={() => router.replace('/')}
-          color="#6B7280"
+          color="#8C7065"
         />
       </View>
     </KeyboardAvoidingView>
@@ -88,35 +89,21 @@ const AdminLoginScreen: React.FC = () => {
 export default AdminLoginScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFF7ED',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
+  container: { flex: 1, backgroundColor: '#FFFAF4', justifyContent: 'center', paddingHorizontal: 20 },
   card: {
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 430,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
-    elevation: 2,
+    borderRadius: 24,
+    padding: 25,
+    elevation: 3,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#F0E6DC',
   },
-  titulo: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  subtitulo: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 16,
-  },
-  info: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 12,
-    marginBottom: 8,
-  },
+  logo: { width: 76, height: 76, borderRadius: 23, alignSelf: 'center', marginBottom: 13 },
+  kicker: { color: '#B4624F', textAlign: 'center', fontSize: 10, fontWeight: '800', letterSpacing: 1.5 },
+  titulo: { fontSize: 25, fontWeight: '800', color: '#432C28', marginTop: 5, textAlign: 'center' },
+  subtitulo: { fontSize: 12, lineHeight: 19, color: '#8E776D', marginTop: 5, marginBottom: 20, textAlign: 'center' },
+  info: { fontSize: 10, color: '#9B8479', marginTop: 9, marginBottom: 7, textAlign: 'center' },
 });

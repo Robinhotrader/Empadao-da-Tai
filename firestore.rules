@@ -1,0 +1,90 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email in [
+          'admin@mrbrasa.com',
+          'Bobyyasmim@gmail.com',
+          'bobyyasmim@gmail.com'
+        ];
+    }
+
+    function validNewOrder() {
+      let data = request.resource.data;
+      let basePrice = data.sabor == 'Torta Fria'
+        ? 17
+        : (data.tamanho == '250g' ? 10 : 20);
+      let unitPrice = basePrice + (data.combo == 'Com mini refrigerante' ? 5 : 0);
+
+      return data.keys().hasAll([
+          'nome', 'telefone', 'sabor', 'tamanho', 'combo', 'quantidade',
+          'precoUnitario', 'valorTotal', 'observacao', 'createdAt', 'entregue', 'status'
+        ])
+        && data.keys().hasOnly([
+          'nome', 'telefone', 'sabor', 'tamanho', 'combo', 'quantidade',
+          'precoUnitario', 'valorTotal', 'observacao', 'createdAt', 'entregue', 'status'
+        ])
+        && data.nome is string
+        && data.nome.size() >= 2
+        && data.nome.size() <= 80
+        && data.telefone is string
+        && data.telefone.size() >= 10
+        && data.telefone.size() <= 30
+        && data.sabor in ['Frango com Palmito e Catupiry', 'Torta Fria']
+        && (data.sabor == 'Torta Fria'
+          ? data.tamanho == '500g'
+          : data.tamanho in ['250g', '500g'])
+        && data.combo in ['Sem mini refrigerante', 'Com mini refrigerante']
+        && data.quantidade is int
+        && data.quantidade >= 1
+        && data.quantidade <= 20
+        && data.precoUnitario is number
+        && data.precoUnitario == unitPrice
+        && data.valorTotal is number
+        && data.valorTotal == unitPrice * data.quantidade
+        && data.observacao is string
+        && data.observacao.size() <= 500
+        && data.createdAt == request.time
+        && data.entregue == false
+        && data.status == 'pendente';
+    }
+
+    function validNewReview() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['nome', 'comentario', 'nota', 'status', 'createdAt'])
+        && data.keys().hasOnly(['nome', 'comentario', 'nota', 'status', 'createdAt'])
+        && data.nome is string
+        && data.nome.size() >= 2
+        && data.nome.size() <= 60
+        && data.comentario is string
+        && data.comentario.size() >= 8
+        && data.comentario.size() <= 500
+        && data.nota is int
+        && data.nota >= 1
+        && data.nota <= 5
+        && data.status == 'pendente'
+        && data.createdAt == request.time;
+    }
+
+    match /empadaPedidos/{pedidoId} {
+      allow create: if validNewOrder();
+      allow get, list, update, delete: if isAdmin();
+    }
+
+    match /dashboard/{pedidoId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /avaliacoesEmpadas/{avaliacaoId} {
+      allow get, list: if isAdmin() || resource.data.status == 'aprovada';
+      allow create: if validNewReview();
+      allow update: if isAdmin()
+        && resource.data.status == 'pendente'
+        && request.resource.data.status == 'aprovada'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      allow delete: if isAdmin();
+    }
+  }
+}

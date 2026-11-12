@@ -9,22 +9,29 @@ export const Input: React.FC<InputProps> = ({ label, ...rest }) => {
   return (
     <View style={styles.container}>
       {label && <Text style={styles.label}>{label}</Text>}
-      <TextInput style={styles.input} placeholderTextColor="#9CA3AF" {...rest} />
+      <TextInput
+        {...rest}
+        style={[styles.input, rest.multiline && styles.multiline, rest.style]}
+        placeholderTextColor="#A38B80"
+        selectionColor="#A74436"
+        accessibilityLabel={rest.accessibilityLabel ?? label}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: { marginBottom: 12 },
-  label: { fontSize: 14, marginBottom: 4, color: '#374151', fontWeight: '600' },
+  label: { fontSize: 11, marginBottom: 7, color: '#62463F', fontWeight: '800' },
   input: {
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
+    borderColor: '#EFE7E0',
+    borderRadius: 11,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
-    fontSize: 14,
-    color: '#111827',
+    paddingVertical: 11,
+    backgroundColor: '#FFFEFC',
+    fontSize: 12,
+    color: '#513A34',
   },
+  multiline: { minHeight: 72, paddingTop: 11 },
 });

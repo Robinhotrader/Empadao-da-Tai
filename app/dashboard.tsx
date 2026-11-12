@@ -8,6 +8,7 @@ import {
   Alert,
   TouchableOpacity,
   Image,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
@@ -15,6 +16,7 @@ import {
   onAdminAuthChange,
   logoutAdmin,
   db,
+  formatarMoeda,
 } from '../src/services/firebase';
 import {
   collection,
@@ -30,13 +32,15 @@ import logoEmpadao from '../assets/logo-empadao-tai.png';
 
 const DashboardScreen: React.FC = () => {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isWide = width >= 860;
   const [pedidos, setPedidos] = useState<PedidoEmpada[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   // KPIs simples
   const totalPedidos = pedidos.length;
-  const totalSabores = new Set(pedidos.map((p) => p.sabor)).size;
+  const totalProdutos = new Set(pedidos.map((p) => p.sabor)).size;
 
   // Carregar em tempo real com onSnapshot
   useEffect(() => {
@@ -101,24 +105,24 @@ const DashboardScreen: React.FC = () => {
   if (checkingAuth) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#3B82F6" />
+        <ActivityIndicator size="large" color="#A74436" />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
-      {/* Header institucional com logo */}
-      <View style={styles.header}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      <View style={[styles.header, isWide && styles.headerWide]}>
         <View style={styles.headerInfo}>
           <Image source={logoEmpadao} style={styles.logo} />
           <View>
+            <Text style={styles.headerEyebrow}>ÁREA ADMINISTRATIVA</Text>
             <Text style={styles.titulo}>Dashboard - Empadão da Taí</Text>
             <Text style={styles.subtitulo}>Acompanhamento dos pedidos concluídos</Text>
           </View>
         </View>
 
-        <View style={styles.headerActions}>
+        <View style={[styles.headerActions, isWide && styles.headerActionsWide]}>
           <TouchableOpacity
             style={styles.headerBtn}
             onPress={() => router.replace('/admin')}
@@ -146,8 +150,8 @@ const DashboardScreen: React.FC = () => {
         </View>
 
         <View style={styles.kpiCard}>
-          <Text style={styles.kpiLabel}>Sabores atendidos</Text>
-          <Text style={styles.kpiValor}>{totalSabores}</Text>
+          <Text style={styles.kpiLabel}>Produtos registrados</Text>
+          <Text style={styles.kpiValor}>{totalProdutos}</Text>
         </View>
       </View>
 
@@ -156,12 +160,13 @@ const DashboardScreen: React.FC = () => {
         <Text style={styles.sectionTitle}>Histórico de pedidos</Text>
 
         {loading ? (
-          <ActivityIndicator color="#3B82F6" />
+          <ActivityIndicator color="#A74436" />
         ) : pedidos.length === 0 ? (
           <Text style={styles.empty}>Nenhum pedido concluído ainda</Text>
         ) : (
-          pedidos.map((p) => (
-            <View key={p.id} style={styles.card}>
+          <View style={[styles.cardGrid, isWide && styles.cardGridWide]}>
+          {pedidos.map((p) => (
+            <View key={p.id} style={[styles.card, isWide && styles.cardWide]}>
               <View style={styles.cardHeader}>
                 <Text style={styles.nome}>{p.nome}</Text>
                 <Text style={styles.tagStatus}>Entregue</Text>
@@ -169,9 +174,11 @@ const DashboardScreen: React.FC = () => {
 
               <Text style={styles.linha}>ID: {p.id}</Text>
               <Text style={styles.linha}>{p.telefone}</Text>
-              <Text style={styles.linha}>Sabor: {p.sabor}</Text>
+              <Text style={styles.linha}>Quantidade: {p.quantidade ?? 1}</Text>
+              <Text style={styles.linha}>Produto: {p.sabor}</Text>
               <Text style={styles.linha}>Tamanho: {p.tamanho}</Text>
-              <Text style={styles.linha}>Combo: {p.combo}</Text>
+              <Text style={styles.linha}>Acompanhamento: {p.combo}</Text>
+              {typeof p.valorTotal === 'number' ? <Text style={styles.preco}>Total: {formatarMoeda(p.valorTotal)}</Text> : null}
               {p.observacao ? <Text style={styles.linha}>Obs: {p.observacao}</Text> : null}
 
               <TouchableOpacity
@@ -181,7 +188,8 @@ const DashboardScreen: React.FC = () => {
                 <Text style={styles.btnExcluirText}>Excluir permanentemente</Text>
               </TouchableOpacity>
             </View>
-          ))
+          ))}
+          </View>
         )}
       </View>
     </ScrollView>
@@ -191,145 +199,45 @@ const DashboardScreen: React.FC = () => {
 export default DashboardScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F3F4F6' },
-  loading: {
-    flex: 1,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  container: { flex: 1, backgroundColor: '#FCF7F0' },
+  scrollContent: { paddingBottom: 48 },
+  loading: { flex: 1, backgroundColor: '#FCF7F0', justifyContent: 'center', alignItems: 'center' },
   header: {
-    paddingTop: 52,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
-    backgroundColor: '#F9A8D4',
-    borderBottomWidth: 1,
-    borderBottomColor: '#BFDBFE',
+    width: '100%', maxWidth: 1180, alignSelf: 'center', marginTop: 18,
+    paddingTop: 24, paddingBottom: 22, paddingHorizontal: 20,
+    backgroundColor: '#512A46', borderRadius: 22,
   },
-  headerInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  logo: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  titulo: { color: '#0F172A', fontSize: 20, fontWeight: '700' },
-  subtitulo: { color: '#475569', fontSize: 13, marginTop: 4 },
-  headerActions: {
-    flexDirection: 'row',
-    marginTop: 12,
-    gap: 8,
-  },
-  headerBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#93C5FD',
-    backgroundColor: '#FFFFFF',
-  },
-  headerBtnText: {
-    fontSize: 12,
-    color: '#1E40AF',
-    fontWeight: '500',
-  },
-  headerBtnLogout: {
-    backgroundColor: '#FEE2E2',
-    borderColor: '#FECACA',
-  },
-  headerBtnLogoutText: {
-    color: '#B91C1C',
-  },
+  headerWide: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerInfo: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
+  logo: { width: 58, height: 58, borderRadius: 18, backgroundColor: '#FFFFFF', borderWidth: 2, borderColor: '#F6E3EC' },
+  headerEyebrow: { color: '#EBC5DD', fontSize: 9, fontWeight: '800', letterSpacing: 1.4, marginBottom: 4 },
+  titulo: { color: '#FFFFFF', fontSize: 21, fontWeight: '800' },
+  subtitulo: { color: '#EBDCE8', fontSize: 12, marginTop: 4 },
+  headerActions: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 16, gap: 10 },
+  headerActionsWide: { marginTop: 0, justifyContent: 'flex-end' },
+  headerBtn: { paddingHorizontal: 15, paddingVertical: 11, borderRadius: 12, borderWidth: 1, borderColor: '#F4E4DD', backgroundColor: '#FFF9F4' },
+  headerBtnText: { fontSize: 12, color: '#512A46', fontWeight: '800' },
+  headerBtnLogout: { backgroundColor: '#7B3650', borderColor: '#93536A' },
+  headerBtnLogoutText: { color: '#FFFFFF' },
 
-  // KPIs
-  kpiSection: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 4,
-    flexDirection: 'row',
-    gap: 12,
-  },
-  kpiCard: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    shadowColor: '#000000',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  kpiLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  kpiValor: {
-    marginTop: 4,
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-  },
+  kpiSection: { width: '100%', maxWidth: 1180, alignSelf: 'center', paddingHorizontal: 18, paddingTop: 16, paddingBottom: 4, flexDirection: 'row', gap: 12 },
+  kpiCard: { flex: 1, backgroundColor: '#FFFFFF', borderRadius: 18, paddingVertical: 16, paddingHorizontal: 16, borderWidth: 1, borderColor: '#EFE2DC', shadowColor: '#513A34', shadowOpacity: 0.05, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
+  kpiLabel: { fontSize: 11, color: '#806578', fontWeight: '700' },
+  kpiValor: { marginTop: 6, fontSize: 27, fontWeight: '800', color: '#A74436' },
 
-  section: { padding: 20 },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 8,
-  },
-  empty: { fontSize: 13, color: '#6B7280', marginTop: 4 },
-
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 14,
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000000',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  nome: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  linha: { fontSize: 13, color: '#4B5563' },
-  tagStatus: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#166534',
-    backgroundColor: '#DCFCE7',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
-  },
-  status: { fontSize: 12, color: '#16A34A', marginTop: 6, fontWeight: '600' },
-  btnExcluir: {
-    marginTop: 10,
-    paddingVertical: 7,
-    borderRadius: 999,
-    alignItems: 'center',
-    backgroundColor: '#ec7af7',
-  },
-  btnExcluirText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '600',
-  },
+  section: { width: '100%', maxWidth: 1180, alignSelf: 'center', paddingHorizontal: 18, paddingVertical: 14 },
+  sectionTitle: { fontSize: 19, fontWeight: '800', color: '#4D2C43', marginBottom: 12 },
+  empty: { fontSize: 13, color: '#927A8D', marginTop: 4, padding: 16, borderRadius: 14, backgroundColor: '#FFFDFB' },
+  cardGrid: { gap: 12 },
+  cardGridWide: { flexDirection: 'row', flexWrap: 'wrap' },
+  card: { width: '100%', backgroundColor: '#FFFFFF', borderRadius: 18, padding: 16, borderWidth: 1, borderColor: '#EFE2DC', shadowColor: '#513A34', shadowOpacity: 0.05, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
+  cardWide: { width: '48.5%' },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 8 },
+  nome: { flexShrink: 1, fontSize: 15, fontWeight: '800', color: '#3E2B34' },
+  linha: { fontSize: 12, lineHeight: 19, color: '#73606A', marginTop: 2 },
+  preco: { fontSize: 15, fontWeight: '800', color: '#A74436', marginTop: 7 },
+  tagStatus: { fontSize: 10, fontWeight: '800', color: '#286A59', backgroundColor: '#E5F4E8', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
+  status: { fontSize: 12, color: '#286A59', marginTop: 6, fontWeight: '700' },
+  btnExcluir: { marginTop: 14, paddingVertical: 11, paddingHorizontal: 14, borderRadius: 11, alignItems: 'center', backgroundColor: '#FFF3F0', borderWidth: 1, borderColor: '#F0D8D0' },
+  btnExcluirText: { color: '#A3312D', fontSize: 12, fontWeight: '800' },
 });

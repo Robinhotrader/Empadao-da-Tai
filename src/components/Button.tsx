@@ -14,6 +14,9 @@ export const Button: React.FC<ButtonProps> = ({ title, onPress, color = '#D97706
       style={[styles.btn, { backgroundColor: color }, disabled && styles.disabled]}
       onPress={onPress}
       disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ disabled: Boolean(disabled) }}
     >
       <Text style={styles.text}>{title}</Text>
     </TouchableOpacity>
@@ -22,8 +25,9 @@ export const Button: React.FC<ButtonProps> = ({ title, onPress, color = '#D97706
 
 const styles = StyleSheet.create({
   btn: {
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
+    borderRadius: 12,
     alignItems: 'center',
     marginVertical: 8,
   },

@@ -14,6 +14,7 @@ import {
   QueryDocumentSnapshot,
   DocumentData,
   Firestore,
+  where,
 } from 'firebase/firestore';
 import { setDoc, deleteDoc } from 'firebase/firestore';
 
@@ -53,12 +54,17 @@ setPersistence(auth, inMemoryPersistence);
 export type TamanhoEmpada = '250g' | '500g';
 
 export type ComboEmpada =
+  | 'Sem mini refrigerante'
+  | 'Com mini refrigerante'
+  // Valores antigos ficam reconhecidos para preservar pedidos já salvos.
   | 'Somente empadão'
   | 'Empadão + Mousse de Maracuja'
   | 'Empadão + Mini refrigerante';
 
 export type SaborEmpada =
   | 'Frango com Palmito e Catupiry'
+  | 'Torta Fria'
+  // Mantém a leitura dos pedidos antigos.
   | 'Frango com Catupiry';
 
 export interface PedidoEmpada {
@@ -68,26 +74,63 @@ export interface PedidoEmpada {
   sabor: SaborEmpada;
   tamanho: TamanhoEmpada;
   combo: ComboEmpada;
+  quantidade?: number;
+  precoUnitario?: number;
+  valorTotal?: number;
   observacao?: string;
   createdAt?: any;
   entregue?: boolean;
   status?: 'pendente' | 'entregue';
 }
 
+export interface AvaliacaoEmpada {
+  id: string;
+  nome: string;
+  comentario: string;
+  nota: number;
+  status: 'pendente' | 'aprovada';
+  createdAt?: any;
+}
+
 export const tamanhos: TamanhoEmpada[] = ['250g', '500g'];
 
 export const combos: ComboEmpada[] = [
-  'Somente empadão',
-  'Empadão + Mousse de Maracuja',
-  'Empadão + Mini refrigerante',
+  'Sem mini refrigerante',
+  'Com mini refrigerante',
 ];
 
 export const sabores: SaborEmpada[] = [
   'Frango com Palmito e Catupiry',
-  'Frango com Catupiry',
+  'Torta Fria',
 ];
 
+export const precos = {
+  empadao250g: 10,
+  empadao500g: 20,
+  tortaFria500g: 17,
+  miniRefrigerante: 5,
+} as const;
+
+export function calcularPrecoUnitarioPedido(
+  sabor: SaborEmpada,
+  tamanho: TamanhoEmpada,
+  combo: ComboEmpada,
+) {
+  const precoProduto = sabor === 'Torta Fria'
+    ? precos.tortaFria500g
+    : tamanho === '250g'
+      ? precos.empadao250g
+      : precos.empadao500g;
+  const adicionalRefrigerante = combo === 'Com mini refrigerante' ? precos.miniRefrigerante : 0;
+  return precoProduto + adicionalRefrigerante;
+}
+
+export function formatarMoeda(valor: number) {
+  return `R$ ${valor.toFixed(2).replace('.', ',')}`;
+}
+
 const collectionName = 'empadaPedidos';
+const avaliacoesCollectionName = 'avaliacoesEmpadas';
 
 // CRUD DE PEDIDOS
 export async function criarPedidoEmpada(
@@ -122,6 +165,83 @@ export async function listarPedidosEmpada() {
     });
 
     return { success: true as const, pedidos };
+  } catch (e: any) {
+    return { success: false as const, error: e.message as string };
+  }
+}
+
+export async function criarAvaliacaoEmpada(avaliacao: Omit<AvaliacaoEmpada, 'id' | 'status' | 'createdAt'>) {
+  try {
+    const nome = avaliacao.nome.trim();
+    const comentario = avaliacao.comentario.trim();
+
+    if (nome.length < 2 || nome.length > 60) {
+      return { success: false as const, error: 'Informe um nome com até 60 caracteres.' };
+    }
+    if (comentario.length < 8 || comentario.length > 500) {
+      return { success: false as const, error: 'O comentário deve ter entre 8 e 500 caracteres.' };
+    }
+    if (!Number.isInteger(avaliacao.nota) || avaliacao.nota < 1 || avaliacao.nota > 5) {
+      return { success: false as const, error: 'Selecione uma nota de 1 a 5 estrelas.' };
+    }
+
+    await addDoc(collection(db, avaliacoesCollectionName), {
+      nome,
+      comentario,
+      nota: avaliacao.nota,
+      status: 'pendente',
+      createdAt: serverTimestamp(),
+    });
+    return { success: true as const };
+  } catch (e: any) {
+    return { success: false as const, error: e.message as string };
+  }
+}
+
+async function listarAvaliacoesPorStatus(status: AvaliacaoEmpada['status']) {
+  const q = query(collection(db, avaliacoesCollectionName), where('status', '==', status));
+  const snap = await getDocs(q);
+  const avaliacoes = snap.docs.map((d) => ({
+    id: d.id,
+    ...(d.data() as Omit<AvaliacaoEmpada, 'id'>),
+  }));
+  avaliacoes.sort((a, b) => {
+    const dataA = typeof a.createdAt?.toMillis === 'function' ? a.createdAt.toMillis() : 0;
+    const dataB = typeof b.createdAt?.toMillis === 'function' ? b.createdAt.toMillis() : 0;
+    return dataB - dataA;
+  });
+  return avaliacoes;
+}
+
+export async function listarAvaliacoesAprovadas() {
+  try {
+    return { success: true as const, avaliacoes: await listarAvaliacoesPorStatus('aprovada') };
+  } catch (e: any) {
+    return { success: false as const, error: e.message as string };
+  }
+}
+
+export async function listarAvaliacoesPendentes() {
+  try {
+    return { success: true as const, avaliacoes: await listarAvaliacoesPorStatus('pendente') };
+  } catch (e: any) {
+    return { success: false as const, error: e.message as string };
+  }
+}
+
+export async function aprovarAvaliacaoEmpada(id: string) {
+  try {
+    await updateDoc(doc(db, avaliacoesCollectionName, id), { status: 'aprovada' });
+    return { success: true as const };
+  } catch (e: any) {
+    return { success: false as const, error: e.message as string };
+  }
+}
+
+export async function excluirAvaliacaoEmpada(id: string) {
+  try {
+    await deleteDoc(doc(db, avaliacoesCollectionName, id));
+    return { success: true as const };
   } catch (e: any) {
     return { success: false as const, error: e.message as string };
   }
