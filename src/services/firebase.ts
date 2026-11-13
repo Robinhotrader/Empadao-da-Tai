@@ -67,6 +67,17 @@ export type SaborEmpada =
   // Mantém a leitura dos pedidos antigos.
   | 'Frango com Catupiry';
 
+export type FormaPagamentoEmpada = 'pix' | 'entrega';
+
+export interface ItemPedidoEmpada {
+  sabor: SaborEmpada;
+  tamanho: TamanhoEmpada;
+  combo: ComboEmpada;
+  quantidade: number;
+  precoUnitario: number;
+  valorTotal: number;
+}
+
 export interface PedidoEmpada {
   id?: string;
   nome: string;
@@ -74,6 +85,8 @@ export interface PedidoEmpada {
   sabor: SaborEmpada;
   tamanho: TamanhoEmpada;
   combo: ComboEmpada;
+  itens?: ItemPedidoEmpada[];
+  formaPagamento?: FormaPagamentoEmpada;
   quantidade?: number;
   precoUnitario?: number;
   valorTotal?: number;

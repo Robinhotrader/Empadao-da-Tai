@@ -11,20 +11,71 @@ service cloud.firestore {
         ];
     }
 
+    function expectedUnitPrice(item) {
+      let basePrice = item.sabor == 'Torta Fria'
+        ? 17
+        : (item.tamanho == '250g' ? 10 : 20);
+      return basePrice + (item.combo == 'Com mini refrigerante' ? 5 : 0);
+    }
+
+    function validOrderItem(item) {
+      let unitPrice = expectedUnitPrice(item);
+      return item is map
+        && item.keys().hasAll([
+          'sabor', 'tamanho', 'combo', 'quantidade', 'precoUnitario', 'valorTotal'
+        ])
+        && item.keys().hasOnly([
+          'sabor', 'tamanho', 'combo', 'quantidade', 'precoUnitario', 'valorTotal'
+        ])
+        && item.sabor in ['Frango com Palmito e Catupiry', 'Torta Fria']
+        && (item.sabor == 'Torta Fria'
+          ? item.tamanho == '500g'
+          : item.tamanho in ['250g', '500g'])
+        && item.combo in ['Sem mini refrigerante', 'Com mini refrigerante']
+        && item.quantidade is int
+        && item.quantidade >= 1
+        && item.quantidade <= 20
+        && item.precoUnitario is number
+        && item.precoUnitario == unitPrice
+        && item.valorTotal is number
+        && item.valorTotal == unitPrice * item.quantidade;
+    }
+
+    function validItemAt(itens, index) {
+      return itens.size() <= index || validOrderItem(itens[index]);
+    }
+
+    function itemValueAt(itens, index) {
+      return itens.size() > index ? itens[index].valorTotal : 0;
+    }
+
+    function itemQuantityAt(itens, index) {
+      return itens.size() > index ? itens[index].quantidade : 0;
+    }
+
+    function totalItemsValue(itens) {
+      return itemValueAt(itens, 0) + itemValueAt(itens, 1)
+        + itemValueAt(itens, 2) + itemValueAt(itens, 3)
+        + itemValueAt(itens, 4) + itemValueAt(itens, 5);
+    }
+
+    function totalItemsQuantity(itens) {
+      return itemQuantityAt(itens, 0) + itemQuantityAt(itens, 1)
+        + itemQuantityAt(itens, 2) + itemQuantityAt(itens, 3)
+        + itemQuantityAt(itens, 4) + itemQuantityAt(itens, 5);
+    }
+
     function validNewOrder() {
       let data = request.resource.data;
-      let basePrice = data.sabor == 'Torta Fria'
-        ? 17
-        : (data.tamanho == '250g' ? 10 : 20);
-      let unitPrice = basePrice + (data.combo == 'Com mini refrigerante' ? 5 : 0);
-
       return data.keys().hasAll([
-          'nome', 'telefone', 'sabor', 'tamanho', 'combo', 'quantidade',
-          'precoUnitario', 'valorTotal', 'observacao', 'createdAt', 'entregue', 'status'
+          'nome', 'telefone', 'sabor', 'tamanho', 'combo', 'itens', 'formaPagamento',
+          'quantidade', 'precoUnitario', 'valorTotal', 'observacao', 'createdAt',
+          'entregue', 'status'
         ])
         && data.keys().hasOnly([
-          'nome', 'telefone', 'sabor', 'tamanho', 'combo', 'quantidade',
-          'precoUnitario', 'valorTotal', 'observacao', 'createdAt', 'entregue', 'status'
+          'nome', 'telefone', 'sabor', 'tamanho', 'combo', 'itens', 'formaPagamento',
+          'quantidade', 'precoUnitario', 'valorTotal', 'observacao', 'createdAt',
+          'entregue', 'status'
         ])
         && data.nome is string
         && data.nome.size() >= 2
@@ -32,18 +83,27 @@ service cloud.firestore {
         && data.telefone is string
         && data.telefone.size() >= 10
         && data.telefone.size() <= 30
-        && data.sabor in ['Frango com Palmito e Catupiry', 'Torta Fria']
-        && (data.sabor == 'Torta Fria'
-          ? data.tamanho == '500g'
-          : data.tamanho in ['250g', '500g'])
-        && data.combo in ['Sem mini refrigerante', 'Com mini refrigerante']
+        && data.itens is list
+        && data.itens.size() >= 1
+        && data.itens.size() <= 6
+        && validItemAt(data.itens, 0)
+        && validItemAt(data.itens, 1)
+        && validItemAt(data.itens, 2)
+        && validItemAt(data.itens, 3)
+        && validItemAt(data.itens, 4)
+        && validItemAt(data.itens, 5)
+        && data.sabor == data.itens[0].sabor
+        && data.tamanho == data.itens[0].tamanho
+        && data.combo == data.itens[0].combo
+        && data.formaPagamento in ['pix', 'entrega']
         && data.quantidade is int
+        && data.quantidade == totalItemsQuantity(data.itens)
         && data.quantidade >= 1
         && data.quantidade <= 20
         && data.precoUnitario is number
-        && data.precoUnitario == unitPrice
+        && data.precoUnitario == data.itens[0].precoUnitario
         && data.valorTotal is number
-        && data.valorTotal == unitPrice * data.quantidade
+        && data.valorTotal == totalItemsValue(data.itens)
         && data.observacao is string
         && data.observacao.size() <= 500
         && data.createdAt == request.time

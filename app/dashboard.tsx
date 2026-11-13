@@ -40,7 +40,11 @@ const DashboardScreen: React.FC = () => {
 
   // KPIs simples
   const totalPedidos = pedidos.length;
-  const totalProdutos = new Set(pedidos.map((p) => p.sabor)).size;
+  const totalProdutos = new Set(
+    pedidos.flatMap((p) =>
+      p.itens?.map((item) => `${item.sabor}-${item.tamanho}`) ?? [`${p.sabor}-${p.tamanho}`],
+    ),
+  ).size;
 
   // Carregar em tempo real com onSnapshot
   useEffect(() => {
@@ -174,10 +178,24 @@ const DashboardScreen: React.FC = () => {
 
               <Text style={styles.linha}>ID: {p.id}</Text>
               <Text style={styles.linha}>{p.telefone}</Text>
-              <Text style={styles.linha}>Quantidade: {p.quantidade ?? 1}</Text>
-              <Text style={styles.linha}>Produto: {p.sabor}</Text>
-              <Text style={styles.linha}>Tamanho: {p.tamanho}</Text>
-              <Text style={styles.linha}>Acompanhamento: {p.combo}</Text>
+              {p.itens?.length ? (
+                <>
+                  <Text style={styles.linha}>Itens do pedido · {p.quantidade ?? p.itens.reduce((total, item) => total + item.quantidade, 0)} unidades</Text>
+                  {p.itens.map((item, index) => (
+                    <Text key={`${item.sabor}-${item.tamanho}-${item.combo}-${index}`} style={styles.linha}>
+                      • {item.quantidade}x {item.sabor} · {item.tamanho} · {item.combo === 'Com mini refrigerante' ? 'com mini refrigerante' : 'sem refrigerante'} · {formatarMoeda(item.valorTotal)}
+                    </Text>
+                  ))}
+                </>
+              ) : (
+                <>
+                  <Text style={styles.linha}>Quantidade: {p.quantidade ?? 1}</Text>
+                  <Text style={styles.linha}>Produto: {p.sabor}</Text>
+                  <Text style={styles.linha}>Tamanho: {p.tamanho}</Text>
+                  <Text style={styles.linha}>Acompanhamento: {p.combo}</Text>
+                </>
+              )}
+              {p.formaPagamento ? <Text style={styles.linha}>Pagamento: {p.formaPagamento === 'pix' ? 'Pix agora' : 'Na entrega'}</Text> : null}
               {typeof p.valorTotal === 'number' ? <Text style={styles.preco}>Total: {formatarMoeda(p.valorTotal)}</Text> : null}
               {p.observacao ? <Text style={styles.linha}>Obs: {p.observacao}</Text> : null}
 
