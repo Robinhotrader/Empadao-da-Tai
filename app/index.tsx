@@ -39,6 +39,46 @@ import fotoProdutos from '../assets/produtos-empadao-torta-fria.jpeg';
 
 const ADMIN_WHATSAPP_NUMBER = '5547988564569';
 const MAX_QUANTIDADE = 20;
+type TourDestino = 'inicio' | 'menu' | 'galeria' | 'avaliacoes' | 'pedido';
+
+const ETAPAS_TOUR: { etiqueta: string; icone: string; titulo: string; descricao: string; destino: TourDestino }[] = [
+  {
+    etiqueta: 'BOAS-VINDAS',
+    icone: '🥧',
+    titulo: 'Conheça o Empadão da Taí',
+    descricao: 'Um tour rapidinho para mostrar os produtos, as avaliações e como fazer seu pedido. Você pode sair quando quiser.',
+    destino: 'inicio',
+  },
+  {
+    etiqueta: 'CARDÁPIO',
+    icone: '🍽️',
+    titulo: 'Veja as opções e os preços',
+    descricao: 'Confira os sabores e tamanhos. A Torta Fria tem 500 g e o empadão tem opções de 250 g e 500 g.',
+    destino: 'menu',
+  },
+  {
+    etiqueta: 'FOTOS DOS PRODUTOS',
+    icone: '📸',
+    titulo: 'Veja de pertinho',
+    descricao: 'Na galeria você encontra uma foto dos produtos. Toque nela para ampliar.',
+    destino: 'galeria',
+  },
+  {
+    etiqueta: 'AVALIAÇÕES',
+    icone: '♡',
+    titulo: 'Leia quem já provou',
+    descricao: 'Veja comentários de outros clientes e, depois da sua compra, conte também como foi sua experiência.',
+    destino: 'avaliacoes',
+  },
+  {
+    etiqueta: 'PEDIDO E PAGAMENTO',
+    icone: '🛒',
+    titulo: 'Monte seu pedido do seu jeito',
+    descricao: 'Combine produtos e tamanhos no carrinho. O total atualiza sozinho; você pode escolher Pix ou pagar na entrega e confirmar pelo WhatsApp.',
+    destino: 'pedido',
+  },
+];
+
 type PedidoConfirmado = {
   id: string;
   nome: string;
@@ -80,7 +120,7 @@ function nomeFormaPagamento(formaPagamento: FormaPagamentoEmpada) {
 export default function HomeScreen() {
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
-  const positions = useRef({ menu: 0, pedido: 0 });
+  const positions = useRef({ menu: 0, galeria: 0, avaliacoes: 0, pedido: 0 });
   const pageOffset = useRef(0);
   const { width } = useWindowDimensions();
   const isWide = width >= 760;
@@ -108,6 +148,8 @@ export default function HomeScreen() {
   const [mensagemAvaliacao, setMensagemAvaliacao] = useState('');
   const [erroAvaliacao, setErroAvaliacao] = useState('');
   const [fotoAmpliada, setFotoAmpliada] = useState(false);
+  const [tourAberto, setTourAberto] = useState(false);
+  const [etapaTour, setEtapaTour] = useState(0);
   const tamanhosDisponiveis: TamanhoEmpada[] = sabor === 'Torta Fria' ? ['500g'] : tamanhos;
   const precoUnitario = calcularPrecoUnitarioPedido(sabor, tamanho, combo);
   const subtotalSelecionado = precoUnitario * quantidade;
@@ -126,8 +168,40 @@ export default function HomeScreen() {
     return () => { ativo = false; };
   }, []);
 
-  const irPara = (section: 'menu' | 'pedido') => {
+  const irPara = (section: 'menu' | 'galeria' | 'avaliacoes' | 'pedido') => {
     scrollRef.current?.scrollTo({ y: positions.current[section], animated: true });
+  };
+
+  const navegarTour = (destino: TourDestino) => {
+    if (destino === 'inicio') {
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
+      return;
+    }
+    irPara(destino);
+  };
+
+  const iniciarTour = () => {
+    setEtapaTour(0);
+    setTourAberto(true);
+    navegarTour('inicio');
+  };
+
+  const avancarTour = () => {
+    if (etapaTour >= ETAPAS_TOUR.length - 1) {
+      setTourAberto(false);
+      irPara('pedido');
+      return;
+    }
+    const proximaEtapa = etapaTour + 1;
+    setEtapaTour(proximaEtapa);
+    navegarTour(ETAPAS_TOUR[proximaEtapa].destino);
+  };
+
+  const voltarTour = () => {
+    if (etapaTour === 0) return;
+    const etapaAnterior = etapaTour - 1;
+    setEtapaTour(etapaAnterior);
+    navegarTour(ETAPAS_TOUR[etapaAnterior].destino);
   };
 
   const aplicarSabor = (novoSabor: SaborEmpada) => {
@@ -381,6 +455,10 @@ export default function HomeScreen() {
                 <Text style={styles.primaryButtonText}>Montar meu pedido</Text>
                 <Text style={styles.primaryButtonArrow}>→</Text>
               </TouchableOpacity>
+              <TouchableOpacity style={styles.tourLaunch} onPress={iniciarTour} accessibilityRole="button">
+                <Text style={styles.tourLaunchIcon}>✦</Text>
+                <Text style={styles.tourLaunchText}>Conheça o site em 1 minuto</Text>
+              </TouchableOpacity>
               <View style={styles.heroNote}>
                 <View style={styles.noteDot} />
                 <Text style={styles.heroNoteText}>Pedido enviado direto para a Taí</Text>
@@ -452,7 +530,7 @@ export default function HomeScreen() {
             <Text style={styles.priceNote}>Mini refrigerante opcional por {formatarMoeda(precos.miniRefrigerante)} a unidade.</Text>
           </View>
 
-          <View style={styles.gallerySection}>
+          <View onLayout={(event) => { positions.current.galeria = pageOffset.current + event.nativeEvent.layout.y; }} style={styles.gallerySection}>
             <View style={styles.sectionHeading}>
               <View>
                 <Text style={styles.sectionEyebrow}>UM GOSTINHO DO QUE VEM POR AÍ</Text>
@@ -487,7 +565,10 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          <View style={[styles.reviewsSection, !isWide && styles.reviewsSectionMobile]}>
+          <View
+            onLayout={(event) => { positions.current.avaliacoes = pageOffset.current + event.nativeEvent.layout.y; }}
+            style={[styles.reviewsSection, !isWide && styles.reviewsSectionMobile]}
+          >
             <View style={styles.sectionHeading}>
               <View>
                 <Text style={styles.sectionEyebrow}>CARINHO COMPARTILHADO</Text>
@@ -884,6 +965,60 @@ export default function HomeScreen() {
           <Image source={fotoProdutos} style={styles.photoModalImage} resizeMode="contain" />
         </View>
       </Modal>
+      <Modal
+        visible={tourAberto}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setTourAberto(false)}
+      >
+        <View style={styles.tourBackdrop}>
+          <View style={styles.tourCard} accessibilityViewIsModal>
+            <View style={styles.tourTopRow}>
+              <View style={styles.tourIconWrap}>
+                <Text style={styles.tourIcon}>{ETAPAS_TOUR[etapaTour].icone}</Text>
+              </View>
+              <View style={styles.tourProgressCopy}>
+                <Text style={styles.tourEyebrow}>{ETAPAS_TOUR[etapaTour].etiqueta}</Text>
+                <Text style={styles.tourCounter} accessibilityLiveRegion="polite">Etapa {etapaTour + 1} de {ETAPAS_TOUR.length}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.tourClose}
+                onPress={() => setTourAberto(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Fechar tour"
+              >
+                <Text style={styles.tourCloseText}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.tourProgressDots}>
+              {ETAPAS_TOUR.map((_, index) => (
+                <View key={index} style={[styles.tourProgressDot, index === etapaTour && styles.tourProgressDotActive]} />
+              ))}
+            </View>
+
+            <Text style={styles.tourTitle}>{ETAPAS_TOUR[etapaTour].titulo}</Text>
+            <Text style={styles.tourDescription}>{ETAPAS_TOUR[etapaTour].descricao}</Text>
+
+            <View style={styles.tourActions}>
+              {etapaTour === 0 ? (
+                <TouchableOpacity style={styles.tourSecondaryButton} onPress={() => setTourAberto(false)} accessibilityRole="button">
+                  <Text style={styles.tourSecondaryText}>Pular tour</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity style={styles.tourSecondaryButton} onPress={voltarTour} accessibilityRole="button">
+                  <Text style={styles.tourSecondaryText}>← Voltar</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity style={styles.tourNextButton} onPress={avancarTour} accessibilityRole="button">
+                <Text style={styles.tourNextText}>{etapaTour === ETAPAS_TOUR.length - 1 ? 'Começar pedido' : 'Próximo'}</Text>
+                <Text style={styles.tourNextArrow}>→</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1007,6 +1142,9 @@ const styles = StyleSheet.create({
   primaryButton: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 18, backgroundColor: '#A74436', paddingVertical: 14, paddingHorizontal: 18, borderRadius: 14, marginTop: 21 },
   primaryButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
   primaryButtonArrow: { color: '#FFFFFF', fontSize: 18, lineHeight: 19 },
+  tourLaunch: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 7, minHeight: 37, paddingHorizontal: 3, marginTop: 6 },
+  tourLaunchIcon: { color: '#A85B49', fontSize: 15, fontWeight: '900' },
+  tourLaunchText: { color: '#8B5145', fontSize: 11, fontWeight: '800', textDecorationLine: 'underline' },
   heroNote: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 15 },
   noteDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#68876A' },
   heroNoteText: { fontSize: 11, color: '#7B6259' },
@@ -1062,6 +1200,27 @@ const styles = StyleSheet.create({
   galleryButton: { flexDirection: 'row', alignItems: 'center', gap: 11, alignSelf: 'flex-start', backgroundColor: '#A74436', paddingHorizontal: 15, paddingVertical: 12, borderRadius: 12, marginTop: 16 },
   galleryButtonText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
   galleryButtonArrow: { color: '#FFFFFF', fontSize: 16 },
+  tourBackdrop: { flex: 1, backgroundColor: '#241520C9', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, paddingVertical: 24 },
+  tourCard: { width: '100%', maxWidth: 430, borderRadius: 24, padding: 22, backgroundColor: '#FFFCF8', borderWidth: 1, borderColor: '#F1E3D8', shadowColor: '#241520', shadowOpacity: 0.2, shadowRadius: 22, shadowOffset: { width: 0, height: 10 }, elevation: 8 },
+  tourTopRow: { flexDirection: 'row', alignItems: 'center', gap: 11 },
+  tourIconWrap: { width: 48, height: 48, borderRadius: 16, backgroundColor: '#F8E7D7', alignItems: 'center', justifyContent: 'center' },
+  tourIcon: { fontSize: 23 },
+  tourProgressCopy: { flex: 1 },
+  tourEyebrow: { color: '#A85B49', fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
+  tourCounter: { color: '#927B71', fontSize: 10, marginTop: 4 },
+  tourClose: { width: 34, height: 34, borderRadius: 12, backgroundColor: '#F5ECE5', alignItems: 'center', justifyContent: 'center' },
+  tourCloseText: { color: '#654842', fontSize: 23, lineHeight: 26 },
+  tourProgressDots: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 20 },
+  tourProgressDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#E7D9D0' },
+  tourProgressDotActive: { width: 23, backgroundColor: '#A74436' },
+  tourTitle: { color: '#49332D', fontSize: 24, lineHeight: 30, fontWeight: '900', letterSpacing: -0.5, marginTop: 19 },
+  tourDescription: { color: '#80675D', fontSize: 13, lineHeight: 21, marginTop: 9, marginBottom: 24 },
+  tourActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  tourSecondaryButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 9 },
+  tourSecondaryText: { color: '#8B6F64', fontSize: 11, fontWeight: '800' },
+  tourNextButton: { minHeight: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, paddingHorizontal: 15, borderRadius: 13, backgroundColor: '#A74436' },
+  tourNextText: { color: '#FFFFFF', fontSize: 11, fontWeight: '900' },
+  tourNextArrow: { color: '#FFFFFF', fontSize: 16, lineHeight: 18 },
   photoModalBackdrop: { flex: 1, backgroundColor: '#241520F2', alignItems: 'center', justifyContent: 'center', padding: 16 },
   photoModalImage: { width: '96%', height: '88%' },
   photoModalClose: { position: 'absolute', zIndex: 2, top: 28, right: 20, width: 42, height: 42, borderRadius: 22, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
